@@ -1,0 +1,44 @@
+service: sembler-app-backend
+
+custom:
+  dynamoDatabasePrefix: sembler
+  dynamoDatabaseEnv: dev
+  firstDynamoName: sembler-dev
+
+
+provider:
+  name: aws
+  region: us-east-1
+  # accountId: 038023196895 # Chris's's Dev acc
+  accountId: 231747615564 # AJ's Dev acc
+  versionFunctions: false # optional, default is true
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - s3:*
+        - "sqs:SendMessage"
+        - states:*
+
+      Resource:
+        - "arn:aws:s3:::*/*"
+        - "arn:aws:states:*"
+        - "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:custom.firstDynamoName}"
+        - "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:custom.secondDynamoName}"
+
+functions:
+  ins_insurance_get_document:
+    handler: fi-documents.getDocument
+    name: ${self:provider.stage}-ins_insurance_get_document
+    timeout: 160
+    runtime: nodejs10.x
+    environment:
+      DYNAMODB_NAME: ${self:custom.dynamoDatabasePrefix}
+      DYNAMODB_NAMESPACE: ${self:custom.dynamoDatabaseEnv}
+    layers:
+      - "arn:aws:lambda:eu-west-1:038023196895:layer:inc_node:13"
